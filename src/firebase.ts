@@ -27,6 +27,21 @@ export type UserObject = {
     age: number,
 }
 
+function UnPromised<T>(promise: Promise<T>): T | null {
+    let result = null;
+
+    if (!promise)
+        return result;
+
+    promise
+        .then((unpack) => {
+            result = unpack;
+        })
+        .catch((e) => { throw new Error(e) });
+
+    return result;
+}
+
 export async function GetUserDocuments() {
     const CollectionName = "dev-user";
 

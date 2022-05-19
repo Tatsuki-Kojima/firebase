@@ -1,3 +1,4 @@
+import { wait } from "@testing-library/user-event/dist/utils";
 import { useEffect, useState } from "react";
 import { GetUserDocuments, UserObject } from "./firebase.ts";
 
@@ -7,71 +8,47 @@ interface IUserInterface {
     age: number,
 }
 
-function User(data: IUserInterface) {
+function UserInfomain(data: IUserInterface) {
     return (
-        <div>
+        <div className="UserInfomation">
             <div>name: {data.name}</div>
             <div>age : {data.age}</div>
         </div>
     );
 }
 
-interface IUserContainerInterface {
-    users: UserObject[],
-}
+function UserInfoContainer() {
+    const [promisedUserDocument, setPromisedDocuments] = useState<UserObject[]>(null);
 
-function UserContainer(props: IUserContainerInterface) {
-    const users = props.users;
+    useEffect(() => {
+        if (promisedUserDocument === null) {
+            const setDocument = async () => {
+                const promiseUserDocs = await GetUserDocuments();
 
-    console.log("UserContainer", users);
+                setPromisedDocuments(promiseUserDocs);
+            }
 
-    if (!users)
-        return <></>;
+            setDocument();
+        }
+    }, [promisedUserDocument]);
 
     return (
-        <div>
-            {users.map((user) => {
-                return (<User id={user} name={user.name} age={user.age} />)
+        <div className="UserInfoContainer">
+            {
+                // nullならmap関数は呼び出さない
+                promisedUserDocument?.map((user) => {
+                    return (<UserInfomain id={user} name={user.name} age={user.age} key={user.id} />)
             })}
         </div>
     );
 }
 
-function UnPromised<T>(promise: Promise<T>): T | null {
-    let result = null;
-
-    if (!promise)
-        return result;
-
-    promise
-        .then((unpack) => {
-            result = unpack;
-        })
-        .catch((e) => { throw new Error(e) })
-
-    console.log("unpacked result: ", result);
-    return result;
-}
-
 export function MainContainer() {
-    const [promisedUserDocument, setPromisedDocuments] = useState<UserObject[]>(null);
 
-    useEffect(() => {
-        if (promisedUserDocument === null) {
-            let promiseUserDocs;
-            const getUserDocs = async () => {
-                promiseUserDocs = await GetUserDocuments();
-            }
-            getUserDocs();
-            setPromisedDocuments(UnPromised<UserObject[]>(promiseUserDocs));
-        }
-    }, [promisedUserDocument]);
-
-    console.log(promisedUserDocument);
 
     return (
         <div>
-            <UserContainer users={promisedUserDocument} />
+            <UserInfoContainer />
         </div>
     );
 }
