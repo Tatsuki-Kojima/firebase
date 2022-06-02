@@ -1,25 +1,13 @@
 // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
+import { async } from "@firebase/util";
 import { collection, Firestore, getFirestore, doc, addDoc, setDoc, deleteDoc, onSnapshot, getDocs } from "firebase/firestore";
+import { PrintToConsole, firebaseApp } from "./firebase-common"
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-    apiKey: "AIzaSyAeIZTexnO19wykQv9IWddjbiC9JMZj5r8",
-    authDomain: "fir-demo-ad96f.firebaseapp.com",
-    projectId: "fir-demo-ad96f",
-    storageBucket: "fir-demo-ad96f.appspot.com",
-    messagingSenderId: "337566520460",
-    appId: "1:337566520460:web:10932cc114547b6efb97a9",
-    measurementId: "G-ZCZC8761NL"
-};
-
-const USE_CONSOLE_LOG = true; // コンソールログに出力を行うか
-
-const firebaseApp = initializeApp(firebaseConfig);
 
 const firestore: Firestore = getFirestore();
 
@@ -68,7 +56,7 @@ export function GetUserDocuments(): UserObject[] {
 }
 
 // 更新されたタイミングで、引数の関数を実行させる
-export function SetSnapshot(onShapFunction: any) {
+export function SetSnapshot(onShapFunction: (users: UserObject[]) => void) {
     const userCollection = collection(firestore, CollectionName);
 
     onSnapshot(userCollection, (users) => {
@@ -78,7 +66,7 @@ export function SetSnapshot(onShapFunction: any) {
             datas.push({ id: user.id, name: data.name, age: data.age, lastWritter: data.lastWritter });
         });
 
-        USE_CONSOLE_LOG && console.log("Get Users: ", datas);
+        PrintToConsole(`Get Users: ${datas}`);
         onShapFunction(datas);
     })
 }
@@ -93,26 +81,32 @@ export function SetUserDocument(user: UserObject, useUserId: boolean) {
     };
 
     if (useUserId)
-            // IDを指定して編集(データの更新で使用)
+        // IDを指定して編集(データの更新で使用)
         setDoc(doc(userCollection, user.id), setData)
-            .then(() => { USE_CONSOLE_LOG && console.log("Update User, name : ", user.name); })
-            .catch((e) => { USE_CONSOLE_LOG && console.log(e), user });
+            .then(() => { PrintToConsole(`Update User, name : ${user.name}`); })
+            .catch((e) => { PrintToConsole(e, user) });
     else
         // IDをランダム生成する(アカウント作成時に使用)
         addDoc(userCollection, setData)
-            .then(() => { USE_CONSOLE_LOG && console.log("Add User, name : ", user.name); })
-            .catch((e) => { USE_CONSOLE_LOG && console.log(e), user });
+            .then(() => { PrintToConsole("Add User, name : ", user.name); })
+            .catch((e) => { PrintToConsole(e, user) });
+}
+
+async function AddUserDoc() {
+    const userCollection = collection(firestore, CollectionName);
+    const result = await addDoc(userCollection, {});
 }
 
 // UserObjectを削除する
 export function DeleteUserDocument(user: UserObject) {
     const userCollection = collection(firestore, CollectionName);
 
-        // deleteに引数を持たすことができないため、firebaseのルールからは何もわからない...
-        //  => firebaseに渡す前に条件分岐を行い、削除できるかを考えなければならない
+    // deleteに引数を持たすことができないため、firebaseのルールからは何もわからない...
+    //  => firebaseに渡す前に条件分岐を行い、削除できるかを考えなければならない
     deleteDoc(doc(userCollection, user.id))
-        .then(() => { USE_CONSOLE_LOG && console.log("Delete User, name : ", user.name); })
-        .catch((e) => { USE_CONSOLE_LOG && console.log(e), user });
+        .then(() => { PrintToConsole("Delete User, name : ", user.name); })
+        .catch((e) => { PrintToConsole(e, user) });
+
 }
 
 // ログインを行う
@@ -125,8 +119,8 @@ export function LoginUser(user: UserObject) {
     };
 
     setDoc(doc(loginCollection, user.id), setData)
-        .then(() => { USE_CONSOLE_LOG && console.log("Logined User, name : ", user.name); })
-        .catch((e) => { USE_CONSOLE_LOG && console.log(e) });
+        .then(() => { PrintToConsole("Logined User, name : ", user.name); })
+        .catch((e) => { PrintToConsole(e) });
 }
 
 // ログアウトを行う
@@ -134,6 +128,6 @@ export function LogoutUser(user: UserObject) {
     const loginCollection = collection(firestore, LoginCollection);
 
     deleteDoc(doc(loginCollection, user.id))
-        .then(() => { USE_CONSOLE_LOG && console.log("Logout User, name : ", user.name); })
-        .catch((e) => { USE_CONSOLE_LOG && console.log(e); });
+        .then(() => { PrintToConsole("Logout User, name : ", user.name); })
+        .catch((e) => { PrintToConsole(e); });
 }

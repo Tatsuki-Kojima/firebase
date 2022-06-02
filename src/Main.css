@@ -1,3 +1,23 @@
+.UserInfoViewr {
+    margin: 0px 5px 10px 5px;
+}
+
 .AddUserContainer {
-    text-align: center;
+    margin: 10px 5px 10px 5px;
+}
+
+.UpdateUserContainer {
+    margin: 10px 5px 10px 5px;
+}
+
+.DeleteUserContainer {
+    margin: 10px 5px 10px 5px;
+}
+
+.LoginUserContainer {
+    margin: 10px 5px 10px 5px;
+}
+
+.AuthLoginContainer {
+    margin: 10px 5px 0px 5px;
 }
