@@ -1,7 +1,9 @@
 import { Button, TextField } from "@mui/material";
 import React from "react";
 import { useEffect, useState } from "react";
-import { UserObject, SetUserDocument, SetSnapshot, DeleteUserDocument, LogoutUser, LoginUser } from "./firebase";
+import { UserObject, SetUserDocument, SetSnapshot, DeleteUserDocument, LogoutUser, LoginUser } from "./firebases/firebase-firestore";
+import { ObserveOnAuthStateChangedEvent, SignInUserAsync, SignOut } from "./firebases/firebase-auth"
+import "./Main.css"
 
 // UserNameからUserObjectを取得する
 function GetUserObjectFromUserName(userName: string, userList: UserObject[]): UserObject | undefined {
@@ -34,7 +36,8 @@ function UserInfoViewr(props: IRequireUserObject) {
 
     return (
         <div className="UserInfoViewr">
-            <div> User List </div>
+            {/* <div> User List </div> */}
+            <div>現在、DBにあるユーザーの一覧</div>
             {
                 // nullなら <></> これを返す
                 props == null ? <></> :
@@ -82,6 +85,7 @@ function AddUser(props: ILoginUser) {
 
     return (
         <div className="AddUserContainer">
+            <div>ユーザーを追加する, Authを使用しないログインが非ログイン状態時で承認される</div>
             <TextField
                 required
                 id="standard-required"
@@ -157,7 +161,8 @@ function UpdateUser(props: IUpdateUser) {
     const [age, setAge] = useState(0);
 
     return (
-        <div className="AddUserContainer">
+        <div className="UpdateUserContainer">
+            <div>ユーザー情報を更新する, Authを使用しないログイン状態時で承認される</div>
             <TextField
                 required
                 id="standard-required"
@@ -193,7 +198,7 @@ function DeleteUser(props: ILoginUser) {
     const deleteButtonOnClicked = () => {
         const users = props.userObjects;
         const user = users.find(user => user.name === name)
-        // ログインしていない場合、弾く(firestoreのルールでは、deleteは弾けなかった)
+        // ログインしていない場合、弾く
         if (user && user.name == props.loginedUser) {
             DeleteUserDocument(user);   // ドキュメントの削除
             LogoutUser(user);           // ログアウト
@@ -206,6 +211,7 @@ function DeleteUser(props: ILoginUser) {
 
     return (
         <div className="DeleteUserContainer">
+            <div>ユーザーを削除する, 2種のログインでともにログイン状態時のみ承認される</div>
             <TextField
                 required
                 id="standard-required"
@@ -255,7 +261,8 @@ function LoginUserComponent(props: ILoginUser) {
     }
 
     return (
-        <div>
+        <div className="LoginUserContainer">
+            <div>Authを使用しないログイン</div>
             {props.loginedUser ? <div>Logined, {props.loginedUser}</div> : <div>Not Logined</div>}
 
             <TextField
@@ -312,10 +319,79 @@ function UserInfoContainer() {
     );
 }
 
+function UserAuthContainer() {
+    const [mailText, setMailText] = useState("");
+    const [passwordText, setPasswordText] = useState("");
+
+    const [signInText, setSignInText] = useState("Not Logined");
+
+    async function OnSignInButtonClicked() {
+        if (mailText == "" || passwordText == "")
+            return;
+
+        const credential = await SignInUserAsync(mailText, passwordText);
+    }
+
+    async function OnSignoutButtonClicked() {
+        await SignOut(() => {
+            setSignInText("Not Logined");
+        });
+    }
+
+    useEffect(() => {
+        ObserveOnAuthStateChangedEvent(
+            (user) => {
+                if (user == null) {
+                    setSignInText("Not Logined");
+                    return;
+                }
+
+                console.log(user);
+
+                if (user.email == null)
+                    return;
+
+                setSignInText("Login: " + user.email.toString());
+            }
+        );
+    }, []);
+
+    return (
+        <div className="AuthLoginContainer">
+            <div>Authを使用するログイン, メールアドレスとパスワードの登録はできないため、管理者用です</div>
+            <div>{signInText}</div>
+
+            <TextField
+                id="standard-required"
+                label="e-Mail"
+                variant="standard"
+                size="small"
+                value={mailText}
+                onChange={(e) => setMailText(e.target.value)}
+                helperText="your e-mail here"
+            />
+            <TextField
+                id="standard-required"
+                label="Password"
+                variant="standard"
+                size="small"
+                type="password"
+                value={passwordText}
+                onChange={(e) => setPasswordText(e.target.value)}
+                helperText="your password here"
+            />
+
+            <Button variant="outlined" onClick={() => { OnSignInButtonClicked() }}>Sign in</Button>
+            <Button variant="outlined" onClick={() => { OnSignoutButtonClicked() }}>Sign out</Button>
+        </div>
+    );
+}
+
 export function MainContainer() {
     return (
         <div>
             <UserInfoContainer />
+            <UserAuthContainer />
         </div>
     );
 }
